@@ -133,6 +133,51 @@ class AdvancedMixFilterTests(unittest.TestCase):
         self.assertIn("volume=5.5dB", vocal_filter)
 
 
+class StyledMixRenderTests(unittest.TestCase):
+    def _write_tone(self, path: Path, frequency_hz: float, sample_rate: int = 44100) -> None:
+        duration_sec = 2.0
+        timeline = np.arange(int(sample_rate * duration_sec), dtype=np.float32) / sample_rate
+        samples = 0.25 * np.sin(2 * np.pi * frequency_hz * timeline)
+        sf.write(path, samples.astype(np.float32), sample_rate)
+
+    def _frequency_amplitude(self, path: Path, frequency_hz: float) -> tuple[int, float]:
+        samples, sample_rate = sf.read(path, always_2d=False)
+        mono = samples.mean(axis=1) if samples.ndim == 2 else samples
+        frequencies = np.fft.rfftfreq(len(mono), 1 / sample_rate)
+        spectrum = np.abs(np.fft.rfft(mono))
+        closest_bin = int(np.argmin(np.abs(frequencies - frequency_hz)))
+        return sample_rate, float(spectrum[closest_bin])
+
+    def test_render_styled_mix_preserves_vocal_signal(self):
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            beat_path = tmp_path / "beat.wav"
+            vocal_path = tmp_path / "vocal.wav"
+            output_path = tmp_path / "mix.wav"
+            self._write_tone(beat_path, 220.0)
+            self._write_tone(vocal_path, 880.0)
+
+            audio._render_styled_mix(str(beat_path), str(vocal_path), str(output_path))
+
+            _, beat_amplitude = self._frequency_amplitude(output_path, 220.0)
+            _, vocal_amplitude = self._frequency_amplitude(output_path, 880.0)
+            self.assertGreater(vocal_amplitude, beat_amplitude * 0.2)
+
+    def test_render_styled_mix_writes_standard_preview_sample_rate(self):
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            beat_path = tmp_path / "beat.wav"
+            vocal_path = tmp_path / "vocal.wav"
+            output_path = tmp_path / "mix.wav"
+            self._write_tone(beat_path, 220.0)
+            self._write_tone(vocal_path, 880.0)
+
+            audio._render_styled_mix(str(beat_path), str(vocal_path), str(output_path))
+
+            sample_rate, _ = self._frequency_amplitude(output_path, 880.0)
+            self.assertEqual(sample_rate, 44100)
+
+
 class AnalysisConfidenceTests(unittest.TestCase):
     def test_estimate_bpm_confidence_is_low_for_empty_beats(self):
         self.assertEqual(audio.estimate_bpm_confidence(np.array([]), 120.0), 0.0)

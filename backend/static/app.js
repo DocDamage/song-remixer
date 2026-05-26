@@ -35,6 +35,7 @@ const loadAndAutoMixBtn = document.getElementById('load-and-auto-mix-btn');
 const dismissStemVocalsBtn = document.getElementById('dismiss-stem-vocals-btn');
 const historySectionEl = document.getElementById('history-section');
 const historyGridEl = document.getElementById('history-grid');
+const historyDismissBtn = document.getElementById('history-dismiss-btn');
 const dropZones = Array.from(document.querySelectorAll('.drop-zone'));
 const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
 const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
@@ -49,6 +50,7 @@ const sidebarStemName = document.getElementById('sidebar-stem-name');
 const fileTreeBeat = document.getElementById('file-tree-beat');
 const fileTreeAcapella = document.getElementById('file-tree-acapella');
 const fileTreeStem = document.getElementById('file-tree-stem');
+let historyDismissed = false;
 
 function getFileMetaEl(input) {
     return document.querySelector(`[data-file-meta-for="${input.id}"]`);
@@ -246,7 +248,7 @@ async function restoreLatestAnalysis() {
 
 function renderHistory(items) {
     historyGridEl.innerHTML = '';
-    if (!Array.isArray(items) || items.length === 0) {
+    if (historyDismissed || !Array.isArray(items) || items.length === 0) {
         historySectionEl.classList.add('hidden');
         return;
     }
@@ -329,6 +331,13 @@ for (const zone of dropZones) {
 
 for (const btn of tabBtns) {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+}
+
+if (historyDismissBtn) {
+    historyDismissBtn.addEventListener('click', () => {
+        historyDismissed = true;
+        historySectionEl.classList.add('hidden');
+    });
 }
 
 if (clearRestoredSessionBtn) {

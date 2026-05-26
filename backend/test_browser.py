@@ -246,6 +246,16 @@ class StemPromptBrowserTests(unittest.TestCase):
 
         self.assertIn("completed", self.page.locator("#job-tray").text_content())
 
+    def test_recent_exports_can_be_dismissed(self):
+        self.page.route("**/history", self._fulfill_history)
+        self.page.route("**/waveform/*", self._fulfill_mock_waveform)
+
+        self.page.goto(self.base_url, wait_until="networkidle")
+        self.page.locator("#history-section").wait_for(state="visible")
+        self.page.locator("#history-dismiss-btn").click()
+
+        self.assertFalse(self.page.locator("#history-section").is_visible())
+
     def test_stem_route_buttons_load_stem_into_vocal_slot(self):
         self.page.route("**/split-stems/jobs", self._fulfill_split_stems)
         self.page.route("**/waveform/*", self._fulfill_mock_waveform)
@@ -320,6 +330,21 @@ class StemPromptBrowserTests(unittest.TestCase):
             status=202,
             content_type="application/json",
             body=json.dumps(MOCK_SPLIT_JOB),
+        )
+
+    def _fulfill_history(self, route):
+        history_item = dict(MOCK_SPLIT_JOB)
+        history_item["kind"] = "auto-mix"
+        history_item["result"] = {
+            "download_url": "/download/mock-mix.wav",
+            "preview_url": "/download/mock-mix.wav",
+            "thumbnail_url": "/waveform/mock-mix.wav",
+            "status_line": "Mock mix is ready.",
+        }
+        route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps({"items": [history_item]}),
         )
 
     def test_timeline_renders_after_restored_analysis(self):

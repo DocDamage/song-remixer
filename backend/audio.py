@@ -410,9 +410,9 @@ def _render_styled_mix(beat_path: str, aligned_path: str, output_path: str, mix_
 
     filter_complex = (
         f"[0:a]{beat_filter}[beat];"
-        f"[1:a]{vocal_filter}[vocal];"
-        f"[beat][vocal]sidechaincompress=threshold={duck_threshold:.3f}:ratio={duck_ratio:.2f}:attack={duck_attack}:release={duck_release}[ducked];"
-        f"[ducked][vocal]amix=inputs=2:duration=longest:dropout_transition=3,"
+        f"[1:a]{vocal_filter},asplit=2[vocal_sidechain][vocal_mix];"
+        f"[beat][vocal_sidechain]sidechaincompress=threshold={duck_threshold:.3f}:ratio={duck_ratio:.2f}:attack={duck_attack}:release={duck_release}[ducked];"
+        f"[ducked][vocal_mix]amix=inputs=2:duration=longest:dropout_transition=3,"
         f"loudnorm=I={style['target_lufs']}:LRA={style['target_lra']}:TP={style['true_peak']},"
         f"alimiter=limit={style['limiter_ceiling']}[aout]"
     )
@@ -429,6 +429,8 @@ def _render_styled_mix(beat_path: str, aligned_path: str, output_path: str, mix_
             filter_complex,
             "-map",
             "[aout]",
+            "-ar",
+            "44100",
             "-acodec",
             "pcm_s16le",
             output_path,

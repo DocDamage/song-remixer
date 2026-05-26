@@ -875,8 +875,16 @@ input[type="range"] {
 #history-section h2 {
     font-size: 1.1rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin: 0;
     text-transform: uppercase;
+}
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 /* Error */
