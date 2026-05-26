@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Song Remixer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="app-header">
+            <h1>SONG REMIXER</h1>
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="remix">Remix</button>
+                <button class="tab-btn" data-tab="stems">Stem Splitter</button>
+            </nav>
+        </header>
+
+        <div class="app-body">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>File Browser</h3>
+                    <button id="browse-folder-btn" class="btn-small">+ Folder</button>
+                </div>
+                <input type="file" id="folder-fallback-input" class="visually-hidden-input" webkitdirectory directory>
+                <div class="file-browser-search">
+                    <input type="text" id="file-browser-search" placeholder="Search files..." autocomplete="off">
+                </div>
+                <div class="file-tree" id="file-tree">
+                    <div class="file-tree-empty">Click "+ Folder" to browse local files</div>
+                </div>
+                <div class="sidebar-player" id="sidebar-player">
+                    <div class="sidebar-player-header">
+                        <span class="sidebar-player-label">Preview</span>
+                        <span class="sidebar-player-name" id="sidebar-player-name">—</span>
+                    </div>
+                    <audio id="sidebar-player-audio" class="audio-preview" controls preload="none"></audio>
+                    <div class="sidebar-player-actions" id="sidebar-player-actions">
+                        <button class="fb-action" data-load-slot="beat">Load Beat</button>
+                        <button class="fb-action" data-load-slot="acapella">Load Vocal</button>
+                        <button class="fb-action" data-load-slot="stem-track">Load Mix</button>
+                    </div>
+                </div>
+                <div class="sidebar-divider"></div>
+                <div class="loaded-files">
+                    <h3>Loaded</h3>
+                    <div class="file-tree-item" id="file-tree-beat">
+                        <span class="file-icon">&#127926;</span>
+                        <span class="file-label-text">Beat</span>
+                        <span class="file-name" id="sidebar-beat-name">—</span>
+                    </div>
+                    <div class="file-tree-item" id="file-tree-acapella">
+                        <span class="file-icon">&#127908;</span>
+                        <span class="file-label-text">Vocals</span>
+                        <span class="file-name" id="sidebar-acapella-name">—</span>
+                    </div>
+                    <div class="file-tree-item" id="file-tree-stem">
+                        <span class="file-icon">&#127925;</span>
+                        <span class="file-label-text">Full Mix</span>
+                        <span class="file-name" id="sidebar-stem-name">—</span>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <!-- Remix Tab -->
+                <div id="remix-tab" class="tab-panel active">
+                    <div class="track-slot">
+                        <label class="slot-label">Instrumental</label>
+                        <div class="drop-zone" data-input-id="beat" id="beat-drop-zone">
+                            <div class="drop-zone-content">
+                                <span class="drop-zone-title">Drop Beat Here</span>
+                                <span class="drop-zone-hint">or click to browse audio files</span>
+                            </div>
+                            <input type="file" id="beat" accept="audio/*" data-track-label="Beat">
+                            <div class="waveform-preview" id="beat-waveform-preview"></div>
+                            <span class="file-meta" id="beat-file-meta" data-file-meta-for="beat">No file selected</span>
+                        </div>
+                    </div>
+
+                    <div class="track-slot">
+                        <label class="slot-label">Vocals</label>
+                        <div class="drop-zone" data-input-id="acapella" id="acapella-drop-zone">
+                            <div class="drop-zone-content">
+                                <span class="drop-zone-title">Drop Vocals Here</span>
+                                <span class="drop-zone-hint">or click to browse audio files</span>
+                            </div>
+                            <input type="file" id="acapella" accept="audio/*" data-track-label="Acapella">
+                            <div class="waveform-preview" id="acapella-waveform-preview"></div>
+                            <span class="file-meta" id="acapella-file-meta" data-file-meta-for="acapella">No file selected</span>
+                        </div>
+                    </div>
+
+                    <div class="mix-style-panel">
+                        <label class="slot-label">Mix Style</label>
+                        <select id="mix-style" class="mix-style-select">
+                            <option value="balanced">Balanced</option>
+                            <option value="club">Club</option>
+                            <option value="vocal-focus">Vocal Focus</option>
+                            <option value="demo-loud">Demo Loud</option>
+                        </select>
+                        <p id="mix-style-description" class="mix-style-description">Balanced studio polish with controlled loudness and clear vocals.</p>
+                    </div>
+
+                    <div class="mix-buttons">
+                        <button id="auto-mix-btn" class="btn-primary">Auto Mix</button>
+                        <button id="advanced-mix-btn" class="btn-secondary">Advanced Mix</button>
+                    </div>
+
+                    <div id="analysis-results" class="hidden">
+                        <h2>Analysis Results</h2>
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <h3>Beat</h3>
+                                <p>BPM: <span id="beat-bpm">--</span></p>
+                                <p>Key: <span id="beat-key">--</span></p>
+                                <p>Downbeat: <span id="beat-downbeat">--</span>s</p>
+                                <p>Confidence: <span id="beat-confidence">--</span></p>
+                            </div>
+                            <div class="result-card">
+                                <h3>Acapella</h3>
+                                <p>BPM: <span id="acap-bpm">--</span></p>
+                                <p>Key: <span id="acap-key">--</span></p>
+                                <p>Downbeat: <span id="acap-downbeat">--</span>s</p>
+                                <p>Confidence: <span id="acap-confidence">--</span></p>
+                            </div>
+                        </div>
+                        <div class="suggestions-grid">
+                            <div class="suggestion-card">
+                                <span class="suggestion-label">Suggested tempo ratio</span>
+                                <strong id="tempo-ratio">--</strong>
+                            </div>
+                            <div class="suggestion-card">
+                                <span class="suggestion-label">Suggested pitch shift</span>
+                                <strong id="pitch-shift">--</strong>
+                            </div>
+                        </div>
+                        <div id="timeline-panel" class="timeline-panel hidden">
+                            <div class="timeline-header">
+                                <h3>Timeline</h3>
+                                <span id="timeline-offset-label" class="timeline-offset-label">Offset: 0.000s</span>
+                            </div>
+                            <div id="timeline-ruler" class="timeline-ruler" aria-hidden="true"></div>
+                            <div class="timeline-track" data-timeline-track="beat">
+                                <div class="timeline-track-label">Beat</div>
+                                <canvas id="beat-timeline-canvas" class="timeline-canvas" width="900" height="88"></canvas>
+                            </div>
+                            <div class="timeline-track" data-timeline-track="acapella">
+                                <div class="timeline-track-label">Vocals</div>
+                                <canvas id="acapella-timeline-canvas" class="timeline-canvas" width="900" height="88"></canvas>
+                                <button id="timeline-vocal-handle" class="timeline-vocal-handle" type="button" aria-label="Drag vocal alignment"></button>
+                            </div>
+                        </div>
+                        <div class="adjustments">
+                            <h3>Fine-tune Alignment</h3>
+                            <p class="helper-text">Use the suggested settings first, then nudge the acapella if the phrasing still lands early or late.</p>
+                            <div class="manual-overrides">
+                                <label>
+                                    BPM
+                                    <input id="override-bpm" type="number" min="40" max="240" step="0.01">
+                                </label>
+                                <label>
+                                    Pitch shift
+                                    <input id="override-pitch-shift" type="number" min="-12" max="12" step="0.01">
+                                </label>
+                                <label>
+                                    Beat downbeat
+                                    <input id="override-beat-downbeat" type="number" min="0" max="60" step="0.001">
+                                </label>
+                                <label>
+                                    Vocal downbeat
+                                    <input id="override-acapella-downbeat" type="number" min="0" max="60" step="0.001">
+                                </label>
+                            </div>
+                            <label for="nudge">Nudge acapella (beats): <span id="nudge-val">0</span></label>
+                            <input type="range" id="nudge" min="-2" max="2" step="0.25" value="0">
+                        </div>
+                        <button id="process-btn" class="btn-primary">Sync &amp; Mix</button>
+                    </div>
+
+                    <div id="download-section" class="hidden">
+                        <h2 id="download-title">Done!</h2>
+                        <div id="auto-mix-status" class="status-card hidden">
+                            <span class="status-badge">Auto Mix ready</span>
+                            <p id="auto-mix-status-line">Your remix has been aligned, polished, and exported.</p>
+                        </div>
+                        <div id="download-preview-card" class="preview-card hidden">
+                            <span class="status-badge">Preview</span>
+                            <div id="preview-variant-controls" class="preview-variant-controls" role="group" aria-label="Preview variant"></div>
+                            <audio id="download-preview" class="audio-preview" controls preload="none"></audio>
+                        </div>
+                        <a id="download-link" href="#" download="remixed.wav" class="btn-primary">Download Remix</a>
+                    </div>
+
+                    <div id="restored-session-banner" class="status-card restored-session-banner hidden">
+                        <span class="status-badge">Restored session</span>
+                        <button id="clear-restored-session-btn" class="btn-secondary compact-btn" type="button">Clear</button>
+                        <span class="subtle-inline-copy">Previous analysis and settings were restored after server restart.</span>
+                    </div>
+                </div>
+
+                <!-- Stem Splitter Tab -->
+                <div id="stems-tab" class="tab-panel">
+                    <div class="track-slot">
+                        <div class="drop-zone" data-input-id="stem-track" id="stem-drop-zone">
+                            <div class="drop-zone-content">
+                                <span class="drop-zone-title">Drop Full Mix Here</span>
+                                <span class="drop-zone-hint">or click to browse one song for separation</span>
+                            </div>
+                            <input type="file" id="stem-track" accept="audio/*" data-track-label="Full mix">
+                            <div class="waveform-preview" id="stem-waveform-preview"></div>
+                            <span class="file-meta" id="stem-track-file-meta" data-file-meta-for="stem-track">No file selected</span>
+                        </div>
+                    </div>
+
+                    <div class="mix-buttons">
+                        <button id="split-stems-btn" class="btn-primary">Split into Stems</button>
+                    </div>
+
+                    <div id="stem-download-section" class="hidden">
+                        <h2>Stem bundle ready</h2>
+                        <div class="status-card">
+                            <span class="status-badge">Studio stems ready</span>
+                            <p id="stem-status-line">Your separated stems are bundled and ready to download.</p>
+                        </div>
+                        <div id="stem-vocal-prompt" class="status-card hidden">
+                            <span class="status-badge">Next step</span>
+                            <p id="stem-vocal-prompt-text">Do you want the joined vocals loaded into the acapella spot automatically?</p>
+                            <div id="stem-vocal-actions" class="mix-buttons centered-actions">
+                                <button id="use-stem-vocals-btn" class="btn-primary">Yes, load vocals</button>
+                                <button id="load-and-auto-mix-btn" class="btn-secondary">Load vocals + Auto Mix</button>
+                                <button id="dismiss-stem-vocals-btn" class="btn-secondary">No thanks</button>
+                            </div>
+                        </div>
+                        <div id="stem-acapella-preview-card" class="preview-card hidden">
+                            <span class="status-badge">Prepared acapella</span>
+                            <audio id="stem-acapella-preview" class="audio-preview" controls preload="none"></audio>
+                            <a id="stem-acapella-download-link" href="#" download="separated-acapella.wav" class="btn-secondary inline-link-button">Download Prepared Acapella</a>
+                        </div>
+                        <div id="stem-preview-grid" class="stem-preview-grid hidden"></div>
+                        <a id="stem-download-link" href="#" download="song-stems.zip" class="btn-primary">Download Stem ZIP</a>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="processing" class="hidden">
+            <div class="spinner"></div>
+            <p id="processing-message">Processing... this may take a moment.</p>
+            <div id="processing-progress-shell" class="progress-shell hidden">
+                <div class="progress-track">
+                    <div id="processing-progress-bar" class="progress-bar"></div>
+                </div>
+                <p id="processing-progress-value">0%</p>
+            </div>
+        </div>
+
+        <div id="history-section" class="hidden">
+            <h2>Recent Studio Exports</h2>
+            <p class="helper-text">Recent Auto Mix and stem jobs stay available after restart until their download window expires.</p>
+            <div id="history-grid" class="history-grid"></div>
+        </div>
+
+        <section id="job-tray" class="job-tray hidden" aria-label="Running jobs">
+            <div class="job-tray-header">
+                <h2>Jobs</h2>
+                <button id="job-tray-clear-btn" class="btn-secondary" type="button">Clear done</button>
+            </div>
+            <div id="job-tray-list" class="job-tray-list"></div>
+        </section>
+
+        <div id="error" class="hidden error" role="alert"></div>
+    </div>
+
+    <!-- Advanced Mix Modal -->
+    <div id="advanced-mix-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Advanced Mix</h2>
+                <button id="close-modal" class="modal-close">&times;</button>
+            </div>
+            <div class="equalizer-section">
+                <h3>Equalizer</h3>
+                <div class="eq-bands">
+                    <div class="eq-band" data-band="0">
+                        <div class="eq-freq">60Hz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="60" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                    <div class="eq-band" data-band="1">
+                        <div class="eq-freq">250Hz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="250" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                    <div class="eq-band" data-band="2">
+                        <div class="eq-freq">500Hz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="500" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                    <div class="eq-band" data-band="3">
+                        <div class="eq-freq">1kHz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="1000" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                    <div class="eq-band" data-band="4">
+                        <div class="eq-freq">4kHz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="4000" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                    <div class="eq-band" data-band="5">
+                        <div class="eq-freq">8kHz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="8000" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                    <div class="eq-band" data-band="6">
+                        <div class="eq-freq">16kHz</div>
+                        <div class="eq-slider">
+                            <input type="range" min="-40" max="20" value="0" orient="vertical" data-advanced-eq-frequency="16000" data-advanced-eq-q="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="eq-scale">
+                    <span>0</span>
+                    <span>-8</span>
+                    <span>-16</span>
+                    <span>-24</span>
+                    <span>-32</span>
+                    <span>-40</span>
+                </div>
+            </div>
+            <div class="eq-knobs">
+                <div class="knob-group">
+                    <label>Freq (Hz)</label>
+                    <input type="range" min="20" max="20000" value="1000" class="knob" data-advanced-control="focus_frequency_hz">
+                </div>
+                <div class="knob-group">
+                    <label>Q</label>
+                    <input type="range" min="0.1" max="10" step="0.1" value="1" class="knob" data-advanced-control="focus_q">
+                </div>
+                <div class="knob-group">
+                    <label>Vocal Gain</label>
+                    <input type="range" min="-12" max="12" value="0" class="knob" data-advanced-control="vocal_gain_db">
+                </div>
+                <div class="knob-group">
+                    <label>Beat Gain</label>
+                    <input type="range" min="-12" max="12" value="0" class="knob" data-advanced-control="beat_gain_db">
+                </div>
+                <div class="knob-group">
+                    <label>Threshold</label>
+                    <input type="range" min="-60" max="0" value="-28" class="knob" data-advanced-control="compressor_threshold_db">
+                </div>
+                <div class="knob-group">
+                    <label>Attack</label>
+                    <input type="range" min="1" max="250" value="12" class="knob" data-advanced-control="compressor_attack_ms">
+                </div>
+                <div class="knob-group">
+                    <label>Release</label>
+                    <input type="range" min="20" max="1000" value="180" class="knob" data-advanced-control="compressor_release_ms">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="analyze-btn" class="btn-secondary">Analyze Tracks</button>
+                <button id="modal-sync-mix-btn" class="btn-primary">Sync &amp; Mix</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/static/app.js"></script>
+</body>
+</html>
