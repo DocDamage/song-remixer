@@ -41,6 +41,28 @@ class UploadPathTests(unittest.TestCase):
 
         self.assertEqual(context.exception.status_code, 400)
 
+    def test_normalize_tempo_ratio_folds_doubled_acapella_bpm(self):
+        ratio = main._normalize_tempo_ratio(89.1029, 184.5703)
+
+        self.assertAlmostEqual(ratio, 0.9655, places=3)
+
+    def test_normalize_tempo_ratio_folds_halved_acapella_bpm(self):
+        ratio = main._normalize_tempo_ratio(184.5703, 89.1029)
+
+        self.assertAlmostEqual(ratio, 1.0357, places=3)
+
+    def test_clone_analysis_response_repairs_stale_half_speed_ratio(self):
+        analysis = {
+            "beat": {"file_id": "beat.wav", "bpm": 89.1029},
+            "acapella": {"file_id": "acapella.wav", "bpm": 184.5703},
+            "suggested": {"tempo_ratio": 0.4828, "pitch_shift": 0},
+            "manual_mix": {"mix_style": "balanced", "nudge_beats": 0.0},
+        }
+
+        restored = main._clone_analysis_response(analysis, restored=True)
+
+        self.assertAlmostEqual(restored["suggested"]["tempo_ratio"], 0.9655, places=3)
+
     def test_ensure_runtime_dependencies_reports_missing_tools(self):
         def fake_which(tool_name):
             if tool_name == "sox":

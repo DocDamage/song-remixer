@@ -125,11 +125,28 @@ def _normalize_manual_mix_settings(settings: Optional[dict[str, Any]] = None) ->
     return ManualMixSettings(**settings).model_dump()
 
 
+def _normalize_tempo_ratio(beat_bpm: float, acapella_bpm: float) -> float:
+    if beat_bpm <= 0 or acapella_bpm <= 0:
+        return 1.0
+
+    raw_ratio = beat_bpm / acapella_bpm
+    candidates = [raw_ratio / 2.0, raw_ratio, raw_ratio * 2.0]
+    plausible_candidates = [ratio for ratio in candidates if 0.75 <= ratio <= 1.5]
+    if not plausible_candidates:
+        return raw_ratio
+    return min(plausible_candidates, key=lambda ratio: abs(1.0 - ratio))
+
+
 def _clone_analysis_response(analysis: dict[str, Any], *, restored: bool) -> dict[str, Any]:
+    suggested = dict(analysis["suggested"])
+    suggested["tempo_ratio"] = _normalize_tempo_ratio(
+        float(analysis["beat"].get("bpm", 0.0)),
+        float(analysis["acapella"].get("bpm", 0.0)),
+    )
     return {
         "beat": dict(analysis["beat"]),
         "acapella": dict(analysis["acapella"]),
-        "suggested": dict(analysis["suggested"]),
+        "suggested": suggested,
         "manual_mix": _normalize_manual_mix_settings(analysis.get("manual_mix")),
         "restored": restored,
     }
@@ -874,7 +891,7 @@ def _build_analysis_response(
     acapella_analysis = _analyze_audio_file(acapella_wav)
 
     pitch_shift = semitone_shift(acapella_analysis["semitone"], beat_analysis["semitone"])
-    tempo_ratio = beat_analysis["bpm"] / acapella_analysis["bpm"] if acapella_analysis["bpm"] > 0 else 1.0
+    tempo_ratio = _normalize_tempo_ratio(beat_analysis["bpm"], acapella_analysis["bpm"])
 
     return {
         "beat": {
