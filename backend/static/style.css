@@ -519,6 +519,18 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.final-tempo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.final-tempo-header .slot-label {
+    margin-bottom: 0;
+}
+
 .final-tempo-panel input[type="range"] {
     width: 100%;
     accent-color: #fff;
@@ -587,6 +599,12 @@ body {
 .btn-secondary:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+.btn-compact {
+    padding: 0.35rem 0.7rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
 }
 
 .inline-link-button {

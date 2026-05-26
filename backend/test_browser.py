@@ -272,6 +272,47 @@ class StemPromptBrowserTests(unittest.TestCase):
 
         self.assertIn('"final_tempo_ratio":1.2', captured["body"])
 
+    def test_final_tempo_reset_restores_manual_mix_payload_default(self):
+        captured = {}
+
+        def fulfill_process(route):
+            captured["body"] = route.request.post_data or ""
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "download_url": "/download/mock-mix.wav",
+                        "preview_url": "/download/mock-mix.wav",
+                        "thumbnail_url": "/waveform/mock-mix.wav",
+                        "preview_variants": {"final": {"label": "Final Mix", "preview_url": "/download/mock-mix.wav"}},
+                    }
+                ),
+            )
+
+        self.page.route("**/analysis/latest", self._fulfill_latest_analysis)
+        self.page.route("**/analysis/latest/timeline", self._fulfill_timeline)
+        self.page.route("**/process", fulfill_process)
+
+        self.page.goto(self.base_url, wait_until="networkidle")
+        self.page.locator("#analysis-results").wait_for(state="visible")
+        self.page.locator("#final-tempo-ratio").evaluate(
+            """
+            slider => {
+                slider.value = '1.33';
+                slider.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            """
+        )
+        self.assertEqual(self.page.locator("#final-tempo-value").text_content(), "133%")
+
+        self.page.locator("#final-tempo-reset-btn").click()
+        self.page.locator("#process-btn").click()
+        self.page.locator("#download-section").wait_for(state="visible")
+
+        self.assertEqual(self.page.locator("#final-tempo-value").text_content(), "100%")
+        self.assertIn('"final_tempo_ratio":1', captured["body"])
+
     def test_job_tray_shows_completed_stem_job(self):
         self.page.route("**/split-stems/jobs", self._fulfill_split_stems)
         self.page.route("**/waveform/*", self._fulfill_mock_waveform)

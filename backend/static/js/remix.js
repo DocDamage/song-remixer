@@ -11,6 +11,7 @@ export function initRemix(options) {
     const mixStyleDescriptionEl = document.getElementById('mix-style-description');
     const finalTempoRatioInput = document.getElementById('final-tempo-ratio');
     const finalTempoValueEl = document.getElementById('final-tempo-value');
+    const finalTempoResetBtn = document.getElementById('final-tempo-reset-btn');
     const autoMixBtn = document.getElementById('auto-mix-btn');
     const analyzeBtn = document.getElementById('analyze-btn');
     const advancedMixBtn = document.getElementById('advanced-mix-btn');
@@ -56,7 +57,15 @@ export function initRemix(options) {
 
     function updateFinalTempoLabel() {
         if (!finalTempoValueEl) return;
-        finalTempoValueEl.textContent = `${Math.round(getFinalTempoRatio() * 100)}%`;
+        const label = `${Math.round(getFinalTempoRatio() * 100)}%`;
+        finalTempoValueEl.textContent = label;
+        if (finalTempoRatioInput) finalTempoRatioInput.setAttribute('aria-valuetext', label);
+    }
+
+    function setFinalTempoRatio(ratio) {
+        if (!finalTempoRatioInput) return;
+        finalTempoRatioInput.value = String(ratio);
+        updateFinalTempoLabel();
     }
 
     function getAdvancedMixPayload() {
@@ -432,6 +441,7 @@ export function initRemix(options) {
         finalTempoRatioInput.addEventListener('input', updateFinalTempoLabel);
         updateFinalTempoLabel();
     }
+    if (finalTempoResetBtn) finalTempoResetBtn.addEventListener('click', () => setFinalTempoRatio(1));
     if (autoMixBtn) autoMixBtn.addEventListener('click', async () => {
         await startAutoMixJob({ preserveStemSplit: true });
     });

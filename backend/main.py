@@ -934,7 +934,14 @@ def _move_stem_outputs(stem_files: dict[str, Path], artifact_owner: str) -> dict
     return persistent_stems
 
 
-def _build_mix_result(output_path: Path, beat_file_name: str, acapella_file_name: str, mix_style: str) -> dict[str, Any]:
+def _build_mix_result(
+    output_path: Path,
+    beat_file_name: str,
+    acapella_file_name: str,
+    mix_style: str,
+    final_tempo_ratio: float = 1.0,
+) -> dict[str, Any]:
+    final_tempo_settings = AdvancedMixSettings(final_tempo_ratio=final_tempo_ratio)
     return {
         "output_file": output_path.name,
         "download_url": _download_url_for(output_path.name),
@@ -950,6 +957,7 @@ def _build_mix_result(output_path: Path, beat_file_name: str, acapella_file_name
         "beat_file_name": beat_file_name,
         "acapella_file_name": acapella_file_name,
         "mix_style": mix_style,
+        "final_tempo_ratio": final_tempo_settings.final_tempo_ratio,
         "status_line": (
             f"{beat_file_name} and {acapella_file_name} were aligned, polished, and exported automatically. "
             "Your remix is ready to download."
@@ -1011,6 +1019,7 @@ def _run_auto_mix_pipeline(
     process_id = str(uuid.uuid4())
     processed_path = UPLOAD_DIR / f"{process_id}_processed.wav"
     output_path = UPLOAD_DIR / f"{process_id}_mixed.wav"
+    final_tempo_settings = _final_tempo_mix_settings(final_tempo_ratio)
 
     try:
         if job_id:
@@ -1045,13 +1054,19 @@ def _run_auto_mix_pipeline(
             0.0,
             analysis["beat"]["bpm"],
             mix_style,
-            _final_tempo_mix_settings(final_tempo_ratio),
+            final_tempo_settings,
         )
     finally:
         _remove_files(raw_beat_path, raw_acapella_path, beat_wav, acapella_wav, processed_path)
 
     _register_artifact(output_path, artifact_owner or process_id, AUTO_MIX_JOB_KIND)
-    return _build_mix_result(output_path, beat_file_name, acapella_file_name, mix_style)
+    return _build_mix_result(
+        output_path,
+        beat_file_name,
+        acapella_file_name,
+        mix_style,
+        final_tempo_settings["final_tempo_ratio"],
+    )
 
 
 def _run_stem_split_pipeline(
@@ -1223,6 +1238,7 @@ async def process(
         _remove_files(processed_path)
 
     _register_artifact(output_path, process_id, "manual-mix")
+    final_tempo_ratio = advanced_mix_settings.final_tempo_ratio if advanced_mix_settings else 1.0
     return {
         "output_file": output_path.name,
         "download_url": f"/download/{output_path.name}",
@@ -1235,6 +1251,7 @@ async def process(
                 "thumbnail_url": _waveform_url_for(output_path.name),
             }
         },
+        "final_tempo_ratio": final_tempo_ratio,
     }
 
 

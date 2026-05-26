@@ -593,6 +593,7 @@ class ApiContractTests(unittest.TestCase):
                         "beat": ("beat.wav", io.BytesIO(b"beat"), "audio/wav"),
                         "acapella": ("vocals.wav", io.BytesIO(b"acapella"), "audio/wav"),
                     },
+                    data={"final_tempo_ratio": "0.9"},
                 )
 
                 self.assertEqual(response.status_code, 202)
@@ -602,6 +603,7 @@ class ApiContractTests(unittest.TestCase):
                 self.assertEqual(payload["result"]["download_url"], "/download/mix-id_mixed.wav")
                 self.assertEqual(payload["result"]["preview_url"], "/download/mix-id_mixed.wav")
                 self.assertEqual(payload["result"]["thumbnail_url"], "/waveform/mix-id_mixed.wav")
+                self.assertEqual(payload["result"]["final_tempo_ratio"], 0.9)
 
                 status_response = client.get(payload["status_url"])
                 self.assertEqual(status_response.status_code, 200)
@@ -767,6 +769,7 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(captured["advanced_mix"].eq_bands[0].gain_db, 4.0)
         self.assertEqual(captured["advanced_mix"].vocal_gain_db, 2.5)
         self.assertEqual(captured["advanced_mix"].final_tempo_ratio, 1.2)
+        self.assertEqual(response.json()["final_tempo_ratio"], 1.2)
 
     def test_process_rejects_invalid_advanced_mix_json(self):
         with patch.object(main, "_ensure_runtime_dependencies", return_value=None):
