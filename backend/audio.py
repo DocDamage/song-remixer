@@ -385,17 +385,17 @@ def _render_styled_mix(beat_path: str, aligned_path: str, output_path: str, mix_
     beat_filter = _build_mix_filter(beat_profile, "beat", style_name, advanced_mix)
     vocal_filter = _build_mix_filter(vocal_profile, "vocal", style_name, advanced_mix)
     duck_threshold_db = (
-        _advanced_value(advanced_mix, "compressor_threshold_db", -28.0)
-        + vocal_profile["crest_db"] / 2.0
+        _advanced_value(advanced_mix, "compressor_threshold_db", -18.0)
+        + vocal_profile["crest_db"] / 3.0
         + style["duck_threshold_db_bias"]
     )
-    duck_threshold = _clamp(_db_to_linear(duck_threshold_db), 0.008, 0.08)
+    duck_threshold = _clamp(_db_to_linear(duck_threshold_db), 0.10, 0.25)
     duck_ratio = _clamp(
-        _advanced_value(advanced_mix, "compressor_ratio", 4.5)
-        + vocal_profile["crest_db"] / 5.0
-        + style["duck_ratio_bias"],
-        1.0,
-        14.0,
+        _advanced_value(advanced_mix, "compressor_ratio", 2.0)
+        + vocal_profile["crest_db"] / 12.0
+        + style["duck_ratio_bias"] * 0.4,
+        1.2,
+        4.0,
     )
     duck_attack = int(_clamp(_advanced_value(advanced_mix, "compressor_attack_ms", 12.0), 1.0, 250.0))
     duck_release = int(

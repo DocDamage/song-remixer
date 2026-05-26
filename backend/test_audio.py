@@ -163,6 +163,21 @@ class StyledMixRenderTests(unittest.TestCase):
             _, vocal_amplitude = self._frequency_amplitude(output_path, 880.0)
             self.assertGreater(vocal_amplitude, beat_amplitude * 0.2)
 
+    def test_render_styled_mix_preserves_beat_under_continuous_vocal(self):
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            beat_path = tmp_path / "beat.wav"
+            vocal_path = tmp_path / "vocal.wav"
+            output_path = tmp_path / "mix.wav"
+            self._write_tone(beat_path, 220.0)
+            self._write_tone(vocal_path, 880.0)
+
+            audio._render_styled_mix(str(beat_path), str(vocal_path), str(output_path))
+
+            _, beat_amplitude = self._frequency_amplitude(output_path, 220.0)
+            _, vocal_amplitude = self._frequency_amplitude(output_path, 880.0)
+            self.assertGreater(beat_amplitude, vocal_amplitude * 0.35)
+
     def test_render_styled_mix_writes_standard_preview_sample_rate(self):
         with TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
