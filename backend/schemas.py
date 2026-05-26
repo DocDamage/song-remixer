@@ -67,6 +67,7 @@ class AdvancedMixSettings(BaseModel):
     compressor_ratio: float = 3.0
     compressor_attack_ms: float = 12.0
     compressor_release_ms: float = 180.0
+    final_tempo_ratio: float = 1.0
 
     @field_validator("eq_bands", mode="before")
     @classmethod
@@ -99,6 +100,11 @@ class AdvancedMixSettings(BaseModel):
     @classmethod
     def normalize_release(cls, value: Any) -> float:
         return clamp_float(value, 20.0, 1000.0, 180.0)
+
+    @field_validator("final_tempo_ratio", mode="before")
+    @classmethod
+    def normalize_final_tempo_ratio(cls, value: Any) -> float:
+        return clamp_float(value, 0.75, 1.5, 1.0)
 
 
 class TimelineOverrideSettings(BaseModel):

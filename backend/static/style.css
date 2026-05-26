@@ -515,6 +515,15 @@ body {
     font-size: 0.85rem;
 }
 
+.final-tempo-panel {
+    margin-bottom: 1.5rem;
+}
+
+.final-tempo-panel input[type="range"] {
+    width: 100%;
+    accent-color: #fff;
+}
+
 /* Buttons */
 .mix-buttons {
     display: flex;

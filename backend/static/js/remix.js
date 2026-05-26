@@ -9,6 +9,8 @@ export function initRemix(options) {
     const acapellaInput = document.getElementById('acapella');
     const mixStyleSelect = document.getElementById('mix-style');
     const mixStyleDescriptionEl = document.getElementById('mix-style-description');
+    const finalTempoRatioInput = document.getElementById('final-tempo-ratio');
+    const finalTempoValueEl = document.getElementById('final-tempo-value');
     const autoMixBtn = document.getElementById('auto-mix-btn');
     const analyzeBtn = document.getElementById('analyze-btn');
     const advancedMixBtn = document.getElementById('advanced-mix-btn');
@@ -47,6 +49,16 @@ export function initRemix(options) {
         return mixStyleSelect.value || 'balanced';
     }
 
+    function getFinalTempoRatio() {
+        const ratio = Number(finalTempoRatioInput?.value || 1);
+        return Number.isFinite(ratio) ? ratio : 1;
+    }
+
+    function updateFinalTempoLabel() {
+        if (!finalTempoValueEl) return;
+        finalTempoValueEl.textContent = `${Math.round(getFinalTempoRatio() * 100)}%`;
+    }
+
     function getAdvancedMixPayload() {
         const eqBands = Array.from(document.querySelectorAll('[data-advanced-eq-frequency]'))
             .map((slider) => ({
@@ -56,7 +68,7 @@ export function initRemix(options) {
             }))
             .filter((band) => Number.isFinite(band.gain_db) && band.gain_db !== 0);
 
-        const payload = { eq_bands: eqBands };
+        const payload = { eq_bands: eqBands, final_tempo_ratio: getFinalTempoRatio() };
         for (const control of document.querySelectorAll('[data-advanced-control]')) {
             const key = control.dataset.advancedControl;
             const value = Number(control.value);
@@ -323,6 +335,7 @@ export function initRemix(options) {
         formData.append('beat', beatFile);
         formData.append('acapella', acapFile);
         formData.append('mix_style', getSelectedMixStyle());
+        formData.append('final_tempo_ratio', getFinalTempoRatio());
 
         try {
             const response = await fetch('/auto-mix/jobs', { method: 'POST', body: formData });
@@ -415,6 +428,10 @@ export function initRemix(options) {
 
     // Event Listeners
     if (analyzeBtn) analyzeBtn.addEventListener('click', runAnalysis);
+    if (finalTempoRatioInput) {
+        finalTempoRatioInput.addEventListener('input', updateFinalTempoLabel);
+        updateFinalTempoLabel();
+    }
     if (autoMixBtn) autoMixBtn.addEventListener('click', async () => {
         await startAutoMixJob({ preserveStemSplit: true });
     });

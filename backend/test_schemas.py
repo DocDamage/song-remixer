@@ -27,6 +27,7 @@ class MixSettingsSchemaTests(unittest.TestCase):
             compressor_ratio=99,
             compressor_attack_ms=0,
             compressor_release_ms=9999,
+            final_tempo_ratio=99,
         )
 
         self.assertEqual(settings.eq_bands[0].gain_db, -40.0)
@@ -37,6 +38,7 @@ class MixSettingsSchemaTests(unittest.TestCase):
         self.assertEqual(settings.compressor_ratio, 12.0)
         self.assertEqual(settings.compressor_attack_ms, 1.0)
         self.assertEqual(settings.compressor_release_ms, 1000.0)
+        self.assertEqual(settings.final_tempo_ratio, 1.5)
 
     def test_advanced_mix_settings_accepts_empty_payload_as_neutral(self):
         settings = schemas.AdvancedMixSettings()
@@ -45,6 +47,7 @@ class MixSettingsSchemaTests(unittest.TestCase):
         self.assertEqual(settings.vocal_gain_db, 0.0)
         self.assertEqual(settings.beat_gain_db, 0.0)
         self.assertEqual(settings.compressor_ratio, 3.0)
+        self.assertEqual(settings.final_tempo_ratio, 1.0)
 
 
 if __name__ == "__main__":

@@ -119,6 +119,11 @@ def _parse_advanced_mix_settings(raw_payload: Optional[str]) -> Optional[Advance
         raise HTTPException(status_code=400, detail=f"advanced_mix validation failed: {exc}") from exc
 
 
+def _final_tempo_mix_settings(final_tempo_ratio: float) -> dict[str, float]:
+    settings = AdvancedMixSettings(final_tempo_ratio=final_tempo_ratio)
+    return {"final_tempo_ratio": settings.final_tempo_ratio}
+
+
 def _normalize_manual_mix_settings(settings: Optional[dict[str, Any]] = None) -> dict[str, Any]:
     if not isinstance(settings, dict):
         return ManualMixSettings().model_dump()
@@ -997,6 +1002,7 @@ def _run_auto_mix_pipeline(
     beat_file_name: str,
     acapella_file_name: str,
     mix_style: str = DEFAULT_MIX_STYLE,
+    final_tempo_ratio: float = 1.0,
     artifact_owner: Optional[str] = None,
     job_id: Optional[str] = None,
 ) -> dict[str, Any]:
@@ -1039,6 +1045,7 @@ def _run_auto_mix_pipeline(
             0.0,
             analysis["beat"]["bpm"],
             mix_style,
+            _final_tempo_mix_settings(final_tempo_ratio),
         )
     finally:
         _remove_files(raw_beat_path, raw_acapella_path, beat_wav, acapella_wav, processed_path)
@@ -1236,6 +1243,7 @@ async def auto_mix(
     beat: UploadFile = File(...),
     acapella: UploadFile = File(...),
     mix_style: str = Form(DEFAULT_MIX_STYLE),
+    final_tempo_ratio: float = Form(1.0),
 ):
     """Upload both tracks and return a finished one-click mix with automatic track treatment."""
     beat_id = str(uuid.uuid4())
@@ -1254,6 +1262,7 @@ async def auto_mix(
             beat_file_name,
             acapella_file_name,
             mix_style,
+            final_tempo_ratio,
         )
     except RuntimeError as exc:
         _remove_files(raw_beat_path, raw_acapella_path)
@@ -1271,6 +1280,7 @@ async def create_auto_mix_job(
     beat: UploadFile = File(...),
     acapella: UploadFile = File(...),
     mix_style: str = Form(DEFAULT_MIX_STYLE),
+    final_tempo_ratio: float = Form(1.0),
 ):
     beat_id = str(uuid.uuid4())
     acapella_id = str(uuid.uuid4())
@@ -1301,6 +1311,7 @@ async def create_auto_mix_job(
             beat_file_name,
             acapella_file_name,
             mix_style,
+            final_tempo_ratio,
             artifact_owner=job_id,
             job_id=job_id,
         ),

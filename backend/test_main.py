@@ -450,6 +450,7 @@ class ApiContractTests(unittest.TestCase):
 
     def test_auto_mix_returns_download_url_and_runs_auto_mix_chain(self):
         auto_mix_calls = []
+        processed_final_tempo_ratios = []
 
         def fake_convert(_input_path, output_path):
             Path(output_path).write_bytes(b"wav-data")
@@ -466,7 +467,12 @@ class ApiContractTests(unittest.TestCase):
             nudge_beats,
             bpm,
             mix_style,
+            advanced_mix=None,
         ):
+            if isinstance(advanced_mix, dict):
+                processed_final_tempo_ratios.append(advanced_mix.get("final_tempo_ratio"))
+            else:
+                processed_final_tempo_ratios.append(getattr(advanced_mix, "final_tempo_ratio", None))
             auto_mix_calls.append(
                 {
                     "beat_path": Path(beat_path).name,
@@ -499,6 +505,7 @@ class ApiContractTests(unittest.TestCase):
                         "beat": ("beat.wav", io.BytesIO(b"beat"), "audio/wav"),
                         "acapella": ("vocals.wav", io.BytesIO(b"acapella"), "audio/wav"),
                     },
+                    data={"final_tempo_ratio": "0.9"},
                 )
 
         self.assertEqual(response.status_code, 200)
@@ -513,6 +520,7 @@ class ApiContractTests(unittest.TestCase):
         self.assertAlmostEqual(auto_mix_calls[0]["nudge_beats"], 0.0)
         self.assertAlmostEqual(auto_mix_calls[0]["bpm"], 124.5)
         self.assertEqual(auto_mix_calls[0]["mix_style"], main.DEFAULT_MIX_STYLE)
+        self.assertEqual(processed_final_tempo_ratios[0], 0.9)
 
     def test_auto_mix_returns_audio_processing_error_details(self):
         def fake_convert(_input_path, output_path):
@@ -747,6 +755,7 @@ class ApiContractTests(unittest.TestCase):
                                 "vocal_gain_db": 2.5,
                                 "beat_gain_db": -1,
                                 "compressor_ratio": 4,
+                                "final_tempo_ratio": 1.2,
                             }
                         ),
                     },
@@ -757,6 +766,7 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(captured["advanced_mix"].eq_bands[0].frequency_hz, 3500.0)
         self.assertEqual(captured["advanced_mix"].eq_bands[0].gain_db, 4.0)
         self.assertEqual(captured["advanced_mix"].vocal_gain_db, 2.5)
+        self.assertEqual(captured["advanced_mix"].final_tempo_ratio, 1.2)
 
     def test_process_rejects_invalid_advanced_mix_json(self):
         with patch.object(main, "_ensure_runtime_dependencies", return_value=None):

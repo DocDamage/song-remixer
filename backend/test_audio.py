@@ -148,6 +148,9 @@ class StyledMixRenderTests(unittest.TestCase):
         closest_bin = int(np.argmin(np.abs(frequencies - frequency_hz)))
         return sample_rate, float(spectrum[closest_bin])
 
+    def _duration_sec(self, path: Path) -> float:
+        return float(sf.info(path).duration)
+
     def test_render_styled_mix_preserves_vocal_signal(self):
         with TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
@@ -191,6 +194,24 @@ class StyledMixRenderTests(unittest.TestCase):
 
             sample_rate, _ = self._frequency_amplitude(output_path, 880.0)
             self.assertEqual(sample_rate, 44100)
+
+    def test_render_styled_mix_applies_final_tempo_to_complete_mix(self):
+        class Settings:
+            final_tempo_ratio = 1.25
+            eq_bands = []
+
+        with TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            beat_path = tmp_path / "beat.wav"
+            vocal_path = tmp_path / "vocal.wav"
+            output_path = tmp_path / "mix.wav"
+            self._write_tone(beat_path, 220.0)
+            self._write_tone(vocal_path, 880.0)
+
+            audio._render_styled_mix(str(beat_path), str(vocal_path), str(output_path), advanced_mix=Settings())
+
+            self.assertLess(self._duration_sec(output_path), 1.75)
+            self.assertGreater(self._duration_sec(output_path), 1.45)
 
 
 class AnalysisConfidenceTests(unittest.TestCase):

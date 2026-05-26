@@ -234,6 +234,44 @@ class StemPromptBrowserTests(unittest.TestCase):
         self.assertTrue(self.page.locator("#advanced-mix-btn").is_visible())
         self.assertTrue(self.page.locator(".sidebar").is_visible())
 
+    def test_final_tempo_slider_is_sent_with_manual_mix(self):
+        captured = {}
+
+        def fulfill_process(route):
+            post_data = route.request.post_data or ""
+            captured["body"] = post_data
+            route.fulfill(
+                status=200,
+                content_type="application/json",
+                body=json.dumps(
+                    {
+                        "download_url": "/download/mock-mix.wav",
+                        "preview_url": "/download/mock-mix.wav",
+                        "thumbnail_url": "/waveform/mock-mix.wav",
+                        "preview_variants": {"final": {"label": "Final Mix", "preview_url": "/download/mock-mix.wav"}},
+                    }
+                ),
+            )
+
+        self.page.route("**/analysis/latest", self._fulfill_latest_analysis)
+        self.page.route("**/analysis/latest/timeline", self._fulfill_timeline)
+        self.page.route("**/process", fulfill_process)
+
+        self.page.goto(self.base_url, wait_until="networkidle")
+        self.page.locator("#analysis-results").wait_for(state="visible")
+        self.page.locator("#final-tempo-ratio").evaluate(
+            """
+            slider => {
+                slider.value = '1.2';
+                slider.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            """
+        )
+        self.page.locator("#process-btn").click()
+        self.page.locator("#download-section").wait_for(state="visible")
+
+        self.assertIn('"final_tempo_ratio":1.2', captured["body"])
+
     def test_job_tray_shows_completed_stem_job(self):
         self.page.route("**/split-stems/jobs", self._fulfill_split_stems)
         self.page.route("**/waveform/*", self._fulfill_mock_waveform)

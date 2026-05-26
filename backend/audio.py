@@ -256,9 +256,18 @@ def _analyze_mix_profile(input_path: str) -> dict[str, float]:
 
 def _advanced_value(settings, key: str, default: float = 0.0) -> float:
     try:
+        if isinstance(settings, dict):
+            return float(settings.get(key, default))
         return float(getattr(settings, key, default))
     except (TypeError, ValueError):
         return default
+
+
+def _build_final_tempo_filter(settings) -> str:
+    tempo_ratio = _clamp(_advanced_value(settings, "final_tempo_ratio", 1.0), 0.75, 1.5)
+    if abs(tempo_ratio - 1.0) < 0.005:
+        return ""
+    return f"atempo={tempo_ratio:.3f},"
 
 
 def _build_advanced_eq_filter(settings) -> str:
@@ -384,6 +393,7 @@ def _render_styled_mix(beat_path: str, aligned_path: str, output_path: str, mix_
 
     beat_filter = _build_mix_filter(beat_profile, "beat", style_name, advanced_mix)
     vocal_filter = _build_mix_filter(vocal_profile, "vocal", style_name, advanced_mix)
+    final_tempo_filter = _build_final_tempo_filter(advanced_mix)
     duck_threshold_db = (
         _advanced_value(advanced_mix, "compressor_threshold_db", -18.0)
         + vocal_profile["crest_db"] / 3.0
@@ -413,6 +423,7 @@ def _render_styled_mix(beat_path: str, aligned_path: str, output_path: str, mix_
         f"[1:a]{vocal_filter},asplit=2[vocal_sidechain][vocal_mix];"
         f"[beat][vocal_sidechain]sidechaincompress=threshold={duck_threshold:.3f}:ratio={duck_ratio:.2f}:attack={duck_attack}:release={duck_release}[ducked];"
         f"[ducked][vocal_mix]amix=inputs=2:duration=longest:dropout_transition=3,"
+        f"{final_tempo_filter}"
         f"loudnorm=I={style['target_lufs']}:LRA={style['target_lra']}:TP={style['true_peak']},"
         f"alimiter=limit={style['limiter_ceiling']}[aout]"
     )
