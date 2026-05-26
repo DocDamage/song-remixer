@@ -36,6 +36,7 @@ const dismissStemVocalsBtn = document.getElementById('dismiss-stem-vocals-btn');
 const historySectionEl = document.getElementById('history-section');
 const historyGridEl = document.getElementById('history-grid');
 const historyDismissBtn = document.getElementById('history-dismiss-btn');
+const historyReopenBtn = document.getElementById('history-reopen-btn');
 const dropZones = Array.from(document.querySelectorAll('.drop-zone'));
 const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
 const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
@@ -51,6 +52,7 @@ const fileTreeBeat = document.getElementById('file-tree-beat');
 const fileTreeAcapella = document.getElementById('file-tree-acapella');
 const fileTreeStem = document.getElementById('file-tree-stem');
 let historyDismissed = false;
+let latestHistoryItems = [];
 
 function getFileMetaEl(input) {
     return document.querySelector(`[data-file-meta-for="${input.id}"]`);
@@ -247,12 +249,15 @@ async function restoreLatestAnalysis() {
 }
 
 function renderHistory(items) {
+    latestHistoryItems = Array.isArray(items) ? items : [];
     historyGridEl.innerHTML = '';
-    if (historyDismissed || !Array.isArray(items) || items.length === 0) {
+    if (historyDismissed || latestHistoryItems.length === 0) {
         historySectionEl.classList.add('hidden');
+        if (historyReopenBtn) historyReopenBtn.classList.toggle('hidden', !historyDismissed || latestHistoryItems.length === 0);
         return;
     }
-    for (const item of items) {
+    if (historyReopenBtn) historyReopenBtn.classList.add('hidden');
+    for (const item of latestHistoryItems) {
         const result = item.result || {};
         const title = item.kind === 'auto-mix' ? 'Auto Mix ready' : 'Stem bundle ready';
         const previewUrl = result.preview_url || result.acapella_preview_url;
@@ -337,6 +342,16 @@ if (historyDismissBtn) {
     historyDismissBtn.addEventListener('click', () => {
         historyDismissed = true;
         historySectionEl.classList.add('hidden');
+        if (historyReopenBtn && latestHistoryItems.length > 0) {
+            historyReopenBtn.classList.remove('hidden');
+        }
+    });
+}
+
+if (historyReopenBtn) {
+    historyReopenBtn.addEventListener('click', () => {
+        historyDismissed = false;
+        renderHistory(latestHistoryItems);
     });
 }
 

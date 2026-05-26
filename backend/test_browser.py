@@ -255,6 +255,22 @@ class StemPromptBrowserTests(unittest.TestCase):
         self.page.locator("#history-dismiss-btn").click()
 
         self.assertFalse(self.page.locator("#history-section").is_visible())
+        self.assertTrue(self.page.locator("#history-reopen-btn").is_visible())
+
+    def test_recent_exports_can_be_reopened_to_play_mix(self):
+        self.page.route("**/history", self._fulfill_history)
+        self.page.route("**/waveform/*", self._fulfill_mock_waveform)
+
+        self.page.goto(self.base_url, wait_until="networkidle")
+        self.page.locator("#history-dismiss-btn").click()
+        self.page.locator("#history-reopen-btn").click()
+
+        self.page.locator("#history-section").wait_for(state="visible")
+        self.assertTrue(self.page.locator("#history-section audio").is_visible())
+        self.assertEqual(
+            self.page.locator("#history-section audio").get_attribute("src"),
+            "/download/mock-mix.wav",
+        )
 
     def test_stem_route_buttons_load_stem_into_vocal_slot(self):
         self.page.route("**/split-stems/jobs", self._fulfill_split_stems)

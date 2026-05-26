@@ -887,6 +887,12 @@ input[type="range"] {
     margin-bottom: 0.5rem;
 }
 
+.history-reopen-btn {
+    display: block;
+    width: fit-content;
+    margin: 1rem auto 0;
+}
+
 /* Error */
 #error {
     position: fixed;
